@@ -1,4 +1,4 @@
-const { generateChatResponse, generateStreamingChatResponse } = require('../services/openaiService');
+const { generateChatResponse, generateStreamingChatResponse } = require('../services/aiService');
 
 const SYSTEM_PROMPT = `You are Aura, an advanced AI assistant for the PoweRoute EV Charging Platform. 
 Your goal is to help EV drivers find charging stations, understand their battery needs, navigate safely, and provide emergency assistance if needed.

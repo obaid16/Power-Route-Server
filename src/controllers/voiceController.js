@@ -1,14 +1,6 @@
-const { OpenAI } = require('openai');
 const fs = require('fs');
-const { generateChatResponse } = require('../services/openaiService');
-const { generateSpeech } = require('../services/elevenLabsService');
-
-let openai = null;
-if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.startsWith('sk-')) {
-  openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-}
+const { generateChatResponse } = require('../services/aiService');
+const { generateSpeech } = require('../services/voiceService');
 
 // @desc    Transcribe Voice
 // @route   POST /api/voice/transcribe
@@ -19,14 +11,9 @@ exports.transcribe = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No audio file uploaded' });
     }
 
-    if (!openai) {
-      return res.status(200).json({ success: true, data: "Mocked transcription because OpenAI key is missing." });
-    }
-
-    const transcription = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(req.file.path),
-      model: "whisper-1",
-    });
+    // In free mode, backend transcription is disabled. 
+    // The frontend uses the browser's native Web Speech API instead.
+    const transcription = { text: "Voice transcription is handled by the browser in free mode." };
 
     // Cleanup temp file
     fs.unlinkSync(req.file.path);
