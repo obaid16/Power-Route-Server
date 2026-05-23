@@ -1,6 +1,6 @@
 const { generateChatResponse, generateStreamingChatResponse } = require('../services/aiService');
 
-const SYSTEM_PROMPT = `You are Aura, an advanced AI assistant for the PoweRoute EV Charging Platform. 
+const SYSTEM_PROMPT = `You are Power AI, an advanced AI assistant for the PoweRoute EV Charging Platform. 
 Your goal is to help EV drivers find charging stations, understand their battery needs, navigate safely, and provide emergency assistance if needed.
 Be concise, helpful, and use a friendly but professional tone. Format responses nicely.`;
 
