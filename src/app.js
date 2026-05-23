@@ -15,7 +15,7 @@ app.set('trust proxy', 1);
 // Security Middlewares
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: true, // Allow any origin in dev, since user might be on a local IP
   credentials: true
 }));
 
