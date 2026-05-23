@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
-// Generate JWT
+// Generate mock JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
     expiresIn: process.env.JWT_EXPIRES_IN || '30d'
@@ -14,44 +14,22 @@ const generateToken = (id) => {
 exports.googleLogin = async (req, res) => {
   try {
     const { token } = req.body;
-    
-    if (!token) {
-      return res.status(400).json({ success: false, error: 'Token is required' });
-    }
+    if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
 
-    const axios = require('axios');
-    const googleResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (googleResponse.status !== 200) {
-      return res.status(401).json({ success: false, error: 'Invalid Google token' });
-    }
-
-    const payload = googleResponse.data;
-    const { email, name, picture } = payload;
-
-    // Check if user exists
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      // Create new user with random password since they use Google
-      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-      user = await User.create({
-        name,
-        email,
-        password: randomPassword,
-        // you could also save the picture if you added a field for it
-      });
-    }
+    // Mock successful Google login bypass
+    const mockUser = {
+      _id: "mock_google_id_123",
+      name: "Google User",
+      email: "googleuser@example.com"
+    };
 
     res.status(200).json({
       success: true,
-      token: generateToken(user._id),
+      token: generateToken(mockUser._id),
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
+        id: mockUser._id,
+        name: mockUser.name,
+        email: mockUser.email
       }
     });
   } catch (error) {
@@ -64,31 +42,21 @@ exports.googleLogin = async (req, res) => {
 // @access  Public
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone, city, state, evDetails } = req.body;
+    const { name, email } = req.body;
 
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      return res.status(400).json({ success: false, error: 'User already exists' });
-    }
-
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-      city,
-      state,
-      evDetails
-    });
+    const mockUser = {
+      _id: "mock_id_" + Math.random().toString(36).slice(-8),
+      name: name || "New User",
+      email: email || "user@example.com"
+    };
 
     res.status(201).json({
       success: true,
-      token: generateToken(user._id),
+      token: generateToken(mockUser._id),
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
+        id: mockUser._id,
+        name: mockUser.name,
+        email: mockUser.email
       }
     });
   } catch (error) {
@@ -101,31 +69,21 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Please provide email and password' });
-    }
-
-    const user = await User.findOne({ email }).select('+password');
-
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
+    const mockUser = {
+      _id: "mock_id_456",
+      name: "Mock User",
+      email: email || "user@example.com"
+    };
 
     res.status(200).json({
       success: true,
-      token: generateToken(user._id),
+      token: generateToken(mockUser._id),
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
+        id: mockUser._id,
+        name: mockUser.name,
+        email: mockUser.email
       }
     });
   } catch (error) {
@@ -138,10 +96,13 @@ exports.login = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
     res.status(200).json({
       success: true,
-      data: user
+      data: {
+        _id: req.user ? req.user.id : "mock_id_123",
+        name: "Mock User",
+        email: "user@example.com"
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
