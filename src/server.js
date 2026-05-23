@@ -24,8 +24,12 @@ socketHandlers(io);
 const startServer = async () => {
   try {
     if (process.env.MONGODB_URI) {
-      await mongoose.connect(process.env.MONGODB_URI);
-      console.log('✅ MongoDB Connected Successfully');
+      mongoose.connect(process.env.MONGODB_URI)
+        .then(() => console.log('✅ MongoDB Connected Successfully'))
+        .catch(err => {
+          console.error('❌ Server startup error (MongoDB):', err.message);
+          console.warn('⚠️ Server is running without a database connection.');
+        });
     } else {
       console.warn('⚠️ MONGODB_URI not provided. Running without database connection.');
     }
@@ -34,8 +38,7 @@ const startServer = async () => {
       console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
     });
   } catch (error) {
-    console.error('❌ Server startup error:', error.message);
-    process.exit(1);
+    console.error('❌ Critical Server Error:', error.message);
   }
 };
 

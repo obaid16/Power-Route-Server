@@ -20,16 +20,24 @@ exports.generateChatResponse = async (messages, systemPrompt) => {
     parts: [{ text: m.content }]
   }));
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: formattedMessages,
-    config: {
-      systemInstruction: systemPrompt,
-      temperature: 0.7,
-    }
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: formattedMessages,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 0.7,
+      }
+    });
 
-  return response.text;
+    return response.text;
+  } catch (error) {
+    console.error("Gemini API Error:", error.message);
+    if (error.message.includes('503') || error.message.includes('high demand')) {
+      return "I'm currently experiencing high demand and need a moment. Please try asking again in a few seconds!";
+    }
+    return "I'm having a little trouble connecting to my brain right now. Please try again!";
+  }
 };
 
 exports.generateStreamingChatResponse = async (messages, systemPrompt, res) => {
@@ -45,17 +53,27 @@ exports.generateStreamingChatResponse = async (messages, systemPrompt, res) => {
     parts: [{ text: m.content }]
   }));
 
-  const responseStream = await ai.models.generateContentStream({
-    model: 'gemini-2.5-flash',
-    contents: formattedMessages,
-    config: {
-      systemInstruction: systemPrompt,
-      temperature: 0.7,
-    }
-  });
+  try {
+    const responseStream = await ai.models.generateContentStream({
+      model: 'gemini-2.5-flash',
+      contents: formattedMessages,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 0.7,
+      }
+    });
 
-  for await (const chunk of responseStream) {
-    res.write(chunk.text);
+    for await (const chunk of responseStream) {
+      res.write(chunk.text);
+    }
+    res.end();
+  } catch (error) {
+    console.error("Gemini API Stream Error:", error.message);
+    if (error.message.includes('503') || error.message.includes('high demand')) {
+      res.write("I'm currently experiencing high demand and need a moment. Please try asking again in a few seconds!");
+    } else {
+      res.write("I'm having a little trouble connecting to my brain right now. Please try again!");
+    }
+    res.end();
   }
-  res.end();
 };
