@@ -19,16 +19,16 @@ exports.googleLogin = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Token is required' });
     }
 
-    // Fetch user info from Google using the access token
-    const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    const axios = require('axios');
+    const googleResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    if (!googleResponse.ok) {
+    if (googleResponse.status !== 200) {
       return res.status(401).json({ success: false, error: 'Invalid Google token' });
     }
 
-    const payload = await googleResponse.json();
+    const payload = googleResponse.data;
     const { email, name, picture } = payload;
 
     // Check if user exists

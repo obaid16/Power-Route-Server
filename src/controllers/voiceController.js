@@ -58,11 +58,10 @@ exports.command = async (req, res) => {
     
     // Use AI to extract structured intent from voice command
     const systemPrompt = `You are an intent parser for an EV app. 
-    User command: "${commandText}"
-    Extract the intent. Available intents: FIND_CHARGERS, BOOK_SLOT, EMERGENCY_SOS, NAVIGATION, OPEN_PROFILE, TRACK_BOOKING.
+    Extract the intent from the user command. Available intents: FIND_CHARGERS, BOOK_SLOT, EMERGENCY_SOS, NAVIGATION, OPEN_PROFILE, TRACK_BOOKING.
     Return ONLY JSON format: { "intent": "INTENT_NAME", "parameters": {} }`;
 
-    const responseText = await generateChatResponse([], systemPrompt);
+    const responseText = await generateChatResponse([{ role: 'user', content: commandText }], systemPrompt);
     
     let parsedData = { intent: "UNKNOWN" };
     try {
