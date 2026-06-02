@@ -5,87 +5,105 @@ const Station = require('../models/Station');
 // @access  Public
 exports.getStations = async (req, res) => {
   try {
-    // Return mock data to bypass MongoDB connection issues
-    const mockStations = [
-      {
-        _id: "1",
-        name: "Downtown Superhub",
-        rating: 4.8,
-        chargers: [
-          { type: "CCS", power: "150kW", status: "available" },
-          { type: "CCS", power: "150kW", status: "available" },
-          { type: "CHAdeMO", power: "50kW", status: "occupied" }
-        ]
-      },
-      {
-        _id: "2",
-        name: "Westside Fast Charge",
-        rating: 4.5,
-        chargers: [
-          { type: "Tesla Supercharger", power: "250kW", status: "available" },
-          { type: "Tesla Supercharger", power: "250kW", status: "available" }
-        ]
-      },
-      {
-        _id: "3",
-        name: "City Center Parking Station",
-        rating: 4.2,
-        chargers: [
-          { type: "Type 2", power: "22kW", status: "available" },
-          { type: "Type 2", power: "22kW", status: "available" },
-          { type: "Type 2", power: "22kW", status: "available" }
-        ]
+    const { lat, lng } = req.query;
+    
+    // 1. Fetch Real Data from OpenChargeMap API (if key is configured)
+    if (lat && lng && process.env.OPENCHARGEMAP_API_KEY) {
+      try {
+        const url = `https://api.openchargemap.io/v3/poi/?output=json&latitude=${lat}&longitude=${lng}&distance=25&maxresults=15&key=${process.env.OPENCHARGEMAP_API_KEY}`;
+        const response = await fetch(url);
+        
+        if (response.ok) {
+          const ocmData = await response.json();
+          if (Array.isArray(ocmData) && ocmData.length > 0) {
+            const liveStations = ocmData.map(poi => ({
+              _id: poi.ID.toString(),
+              name: poi.AddressInfo?.Title || "EV Charging Station",
+              rating: (Math.random() * (5 - 3.5) + 3.5).toFixed(1), // Mock rating 3.5-5.0
+              location: {
+                type: "Point",
+                coordinates: [poi.AddressInfo?.Longitude || 0, poi.AddressInfo?.Latitude || 0],
+                formattedAddress: `${poi.AddressInfo?.AddressLine1 || ''} ${poi.AddressInfo?.Town || ''}`.trim() || "Address not available"
+              },
+              pricing: { ratePerKwh: 0.45, currency: "USD" }, // Pricing usually isn't standard in OCM
+              chargers: poi.Connections?.map(conn => ({
+                type: conn.Level?.Title || "Standard",
+                power: conn.PowerKW ? `${conn.PowerKW}kW` : "50kW",
+                status: poi.StatusType?.IsOperational === false ? "occupied" : "available",
+                portType: conn.ConnectionType?.Title || "Standard"
+              })) || [ { type: "Standard", power: "50kW", status: "available", portType: "Standard" } ]
+            }));
+            
+            return res.status(200).json({
+              success: true,
+              count: liveStations.length,
+              data: liveStations
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch from OpenChargeMap, falling back to local DB:", err.message);
       }
-    ];
+    }
+
+    // 2. Fallback to local MongoDB Data
+    let stations = await Station.find();
+    
+    // Seed database if no stations exist
+    if (stations.length === 0) {
+      const seedStations = [
+        {
+          name: "Electrify America - Union Square",
+          rating: 4.8,
+          location: { type: "Point", coordinates: [-122.4194, 37.7749], formattedAddress: "123 Tech Blvd, San Francisco" },
+          pricing: { ratePerKwh: 0.45, currency: "USD" },
+          chargers: [
+            { type: "DC Fast", power: "150kW", status: "available", portType: "CCS1" },
+            { type: "DC Fast", power: "150kW", status: "available", portType: "CCS1" },
+            { type: "DC Fast", power: "50kW", status: "occupied", portType: "CHAdeMO" }
+          ]
+        },
+        {
+          name: "Tesla Supercharger - Market St",
+          rating: 4.5,
+          location: { type: "Point", coordinates: [-122.4294, 37.7849], formattedAddress: "456 West Ave, San Francisco" },
+          pricing: { ratePerKwh: 0.50, currency: "USD" },
+          chargers: [
+            { type: "DC Fast", power: "250kW", status: "available", portType: "NACS" },
+            { type: "DC Fast", power: "250kW", status: "available", portType: "NACS" }
+          ]
+        },
+        {
+          name: "ChargePoint - Westfield Mall",
+          rating: 4.2,
+          location: { type: "Point", coordinates: [-122.4094, 37.7649], formattedAddress: "789 Center St, San Francisco" },
+          pricing: { ratePerKwh: 0.30, currency: "USD" },
+          chargers: [
+            { type: "Level 2", power: "22kW", status: "available", portType: "J1772" },
+            { type: "Level 2", power: "22kW", status: "available", portType: "J1772" }
+          ]
+        }
+      ];
+      await Station.insertMany(seedStations);
+      stations = await Station.find();
+    }
+
     res.status(200).json({
       success: true,
-      count: mockStations.length,
-      data: mockStations
+      count: stations.length,
+      data: stations
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// @desc    Get single station
-// @route   GET /api/stations/:id
-// @access  Public
 exports.getStation = async (req, res) => {
   try {
-    const mockStations = [
-      {
-        _id: "1",
-        name: "Downtown Superhub",
-        rating: 4.8,
-        chargers: [
-          { type: "CCS", power: "150kW", status: "available" },
-          { type: "CCS", power: "150kW", status: "available" },
-          { type: "CHAdeMO", power: "50kW", status: "occupied" }
-        ]
-      },
-      {
-        _id: "2",
-        name: "Westside Fast Charge",
-        rating: 4.5,
-        chargers: [
-          { type: "Tesla Supercharger", power: "250kW", status: "available" },
-          { type: "Tesla Supercharger", power: "250kW", status: "available" }
-        ]
-      },
-      {
-        _id: "3",
-        name: "City Center Parking Station",
-        rating: 4.2,
-        chargers: [
-          { type: "Type 2", power: "22kW", status: "available" },
-          { type: "Type 2", power: "22kW", status: "available" },
-          { type: "Type 2", power: "22kW", status: "available" }
-        ]
-      }
-    ];
-
-    const station = mockStations.find(s => s._id === req.params.id) || mockStations[0];
-    
+    const station = await Station.findById(req.params.id);
+    if (!station) {
+      return res.status(404).json({ success: false, error: 'Station not found' });
+    }
     res.status(200).json({
       success: true,
       data: station
