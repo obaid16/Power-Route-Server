@@ -50,3 +50,5 @@ process.on('unhandledRejection', (err, promise) => {
 });
 
 startServer();
+
+// Trigger restart
