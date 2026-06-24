@@ -51,4 +51,4 @@ process.on('unhandledRejection', (err, promise) => {
 
 startServer();
 
-// Trigger restart - Port cleared and duplicate process stopped
+// Trigger restart - Conflicting background process terminated. Port 5000 is now free.

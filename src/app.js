@@ -42,12 +42,14 @@ const stationRoutes = require('./routes/stationRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const voiceRoutes = require('./routes/voiceRoutes');
+const safetyRoutes = require('./routes/safetyRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/stations', stationRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/voice', voiceRoutes);
+app.use('/api/safety', safetyRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
