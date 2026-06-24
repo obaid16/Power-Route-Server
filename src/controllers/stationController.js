@@ -100,14 +100,51 @@ exports.getStations = async (req, res) => {
 
 exports.getStation = async (req, res) => {
   try {
-    const station = await Station.findById(req.params.id);
-    if (!station) {
-      return res.status(404).json({ success: false, error: 'Station not found' });
+    const { id } = req.params;
+
+    // Check if it's an OpenChargeMap ID (numeric) and we have the API key
+    if (!isNaN(id) && process.env.OPENCHARGEMAP_API_KEY) {
+      const url = `https://api.openchargemap.io/v3/poi/?output=json&chargepointid=${id}&key=${process.env.OPENCHARGEMAP_API_KEY}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const ocmData = await response.json();
+        if (Array.isArray(ocmData) && ocmData.length > 0) {
+          const poi = ocmData[0];
+          const station = {
+            _id: poi.ID.toString(),
+            name: poi.AddressInfo?.Title || "EV Charging Station",
+            rating: (Math.random() * (5 - 3.5) + 3.5).toFixed(1), // Mock rating
+            location: {
+              type: "Point",
+              coordinates: [poi.AddressInfo?.Longitude || 0, poi.AddressInfo?.Latitude || 0],
+              formattedAddress: `${poi.AddressInfo?.AddressLine1 || ''} ${poi.AddressInfo?.Town || ''}`.trim() || "Address not available"
+            },
+            pricing: { ratePerKwh: 0.45, currency: "USD" },
+            chargers: poi.Connections?.map(conn => ({
+              type: conn.Level?.Title || "Standard",
+              power: conn.PowerKW ? `${conn.PowerKW}kW` : "50kW",
+              status: poi.StatusType?.IsOperational === false ? "occupied" : "available",
+              portType: conn.ConnectionType?.Title || "Standard"
+            })) || [ { type: "Standard", power: "50kW", status: "available", portType: "Standard" } ]
+          };
+          return res.status(200).json({ success: true, data: station });
+        }
+      }
     }
-    res.status(200).json({
-      success: true,
-      data: station
-    });
+
+    // Fallback to local MongoDB
+    // Make sure it is a valid ObjectId before querying to prevent CastError
+    if (id.length === 24) {
+      const station = await Station.findById(id);
+      if (station) {
+        return res.status(200).json({
+          success: true,
+          data: station
+        });
+      }
+    }
+
+    return res.status(404).json({ success: false, error: 'Station not found' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
