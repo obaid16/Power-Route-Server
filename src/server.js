@@ -51,4 +51,4 @@ process.on('unhandledRejection', (err, promise) => {
 
 startServer();
 
-// Trigger restart
+// Trigger restart - Port cleared and duplicate process stopped
